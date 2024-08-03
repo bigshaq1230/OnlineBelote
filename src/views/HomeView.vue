@@ -1,88 +1,80 @@
 <template>
-    <table>
-        <tr>
-            <td><label>Team A name:</label>
-                <input type="text" v-model="team_A">
-            </td>
-            <td>
-                <PlayerSelection :players="list[0]" :index="0" @selected="handleSelect" />
-            </td>
-            <td>
-                <PlayerSelection :players="list[1]" :index="1" @selected="handleSelect" />
-            </td>
-        </tr>
-        <tr>
-            <td><label>Team B name:</label>
-                <input type="text" v-model="team_B">
-            </td>
-            <td>
-                <PlayerSelection :players="list[2]" :index="2" @selected="handleSelect" />
-            </td>
-            <td>
-                <PlayerSelection :players="list[3]" :index="3" @selected="handleSelect" />
-            </td>
-        </tr>
-    </table>
-    <button @click="start">start match</button>
+    <div class="grid">
+        <div class="grid_item">match</div>
+        <div class="grid_item">frinds and request</div>
+    </div>
 </template>
 
+
+
+
 <script setup>
-import { handleError } from '@/func';
-import router from '@/router';
-import { useData } from '@/stores/data';
 import { supabase } from '@/supabase/supabase';
+import { onMounted, ref } from 'vue';
+import { useData } from '@/stores/data';
 import { storeToRefs } from 'pinia';
-import { ref, watch } from 'vue';
-import PlayerSelection from '@/components/PlayerSelection.vue';
+import { handleError } from '@/func';
+const store = useData()
+const { player,session } = storeToRefs(store)
+let Friends = ref([])
+let outFriends = ref([])
+let incomingFriends = ref([])
+const getFriends = async () => {
+    console.log(session.value)
+    const { data: data, error } = await supabase
+        .from('relation')
+        .select(`player:player_id!inner(*)`)
+        .or(`sender_id.eq.${session.value.user.id},receiver_id.eq.${session.value.user.id}`)
+        .eq('request', false);
 
-const store = useData();
-const { players, team_A, team_B, p1, p2, p3, p4, session, changes, matches } = storeToRefs(store);
-const list = ref(Array(4).fill().map(() => [...players.value]));
+    handleError(error)
 
-let Plist = [p1,p2,p3,p4]
-watch(players, () => {
-    list.value = Array(4).fill().map(() => [...players.value]);
-    console.log(list.value);
-});
-
-const handleSelect = ({ id, index }) => {
-
-    Plist[index].value = id
-    list.value = list.value.map((playerList, i) => {
-        if (i !== index) {
-            return playerList.filter(player => player.user_id !== id);
-        }
-        return playerList;
-    });
-};
-
-async function start() {
-    const date = Date.now();
-    const match = {
-        team_A: team_A.value,
-        team_B: team_B.value,
-        p1: p1.value,
-        p2: p2.value,
-        p3: p3.value,
-        p4: p4.value,
-        id: date,
-    };
-    const match2 = JSON.parse(JSON.stringify(match));
-    match2.rounds = [];
-    matches.value.push(match2);
-    try {
-        if (!session.value) {
-            changes.value.matches.edited.push(match);
-        } else {
-            const { error } = await supabase.from('match').insert(match);
-            handleError(error);
-        }
-    } catch (error) {
-        handleError(error);
-    } finally {
-        router.push('/match/' + date);
-    }
+    Friends.value = data
 }
+
+const getOutGoingFriendRequest = async () => {
+    const { data: data, error } = await supabase
+        .from('relation')
+        .select(`
+    player:receiver_id(*)
+  `)
+        .eq('sender_id', session.value.user.id)
+        .eq('request', true);
+
+    handleError(error)
+    outFriends.value = data
+}
+
+const getIncomingFriends = async () => {
+    const { data: data, error } = await supabase
+        .from('relation')
+        .select(`
+    player:sender_id(*)
+  `)
+        .eq('receiver_id', session.value.user.id)
+        .eq('request', true);
+
+    handleError(error)
+    incomingFriends = data
+
+}
+
+onMounted ( async() => {
+    setTimeout(() => {
+  console.log("Delayed for 1 second.");
+}, 1000);
+    await getFriends()
+} )
 </script>
 
-<style scoped></style>
+<style scoped>
+.grid {
+    display: grid;
+    grid-template-columns: 70% 30%;
+
+}
+
+.grid_item {
+    display: block;
+}
+</style>

@@ -1,10 +1,7 @@
 <template>
     <form @submit.prevent="">
         <label>first name :</label>
-        <input type="text" name="" id="" v-model="player.first_name">
-        <br>
-        <label>last name :</label>
-        <input type="text" name="" id="" v-model="player.last_name">
+        <input type="text" name="" id="" v-model="player.player_name">
         <br>
         <img :src="player.on_device_url" alt="">
         <br>
@@ -26,22 +23,20 @@ import { handleError } from '../func';
 import { ref } from 'vue';
 import router from '@/router';
 const store = useData()
-const { session, player, changes } = storeToRefs(store)
+const { session, player } = storeToRefs(store)
 let files = ref([]);
 
 async function updateInfo() {
+    
     const player2 = JSON.parse(JSON.stringify(player.value))
     delete player2?.on_device_url
-    if (!session.value) {
-        changes.value.player = player2
-    }
-    else {
-        player2.user_id = session.value.user.id
-        player.value.user_id = session.value.user.id
-        await uploadAvatar()
-        const { error } = await supabase.from('player').upsert(player2)
-        handleError(error)
-    }
+
+    player2.player_id = session.value.user.id
+    player.value.player_id = session.value.user.id
+    await uploadAvatar()
+    const { error } = await supabase.from('player').upsert(player2)
+    handleError(error)
+
     router.replace('/')
 }
 function basic_handle(evt) {

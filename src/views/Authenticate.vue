@@ -19,20 +19,26 @@ async function callback(response) {
         supabase.auth.onAuthStateChange((_, _session) => {
             session.value = _session
         })
-        const { error:playerError, data:PlayerData, count} = await supabase.from('player').select('*',{count:'exact'}).eq('user_id',session.value.user.id)
+        const { error:playerError, data:PlayerData, count} = await supabase.from('player').select('*',{count:'exact'}).eq('player_id',session.value.user.id)
         handleError(playerError)
-        if(count !== 0 ) {
-            player.value = PlayerData[0]
+        console.log(count)
+        if(count === 0) {
+            // insert player
+            console.log("insert player to server")
+            player.value.player_id = session.value.user.id
+            const { error } = await supabase.from('player').insert(player.value)
+            handleError(error)
+            router.replace('/account')
         }
         else {
-            player.value.user_id = session.value.user.id
-            const { error } = await supabase.from('player').upsert(player)
-            handleError(error)
+            // justs get own player Data
+            console.log(PlayerData[0])
+            player.value = PlayerData[0]
+            router.replace('/')
         }
-        router.replace('/')
 
     } catch (error) {
-        console.error('Google sign-in error:', error.message)
+        console.error(error.message)
     }
 
 }

@@ -9,30 +9,16 @@ export const useData = defineStore('data', () => {
   let p3 = ref("")
   let p4 = ref("")
   let session = ref()
-  let player = ref(JSON.parse(localStorage.getItem('player')) || {
-    first_name: "first_name here",
-    last_name: "last_name here",
-    user_id: -1
+  let player = ref({
+    player_id: "",
+    player_name: " ",
+    player_birthday: "1-1-2000",
+    avatar_url: ""
   })
-  let players = ref(JSON.parse(localStorage.getItem('players')) || [])
-  let matches = ref(JSON.parse(localStorage.getItem('matches')) || [])
+  let players = ref()
+  let matches = ref()
 
 
-  let changes = ref(JSON.parse(localStorage.getItem('changes')) || {
 
-    player: {},
-
-    rounds: {
-      table: 'round',
-      edited: [],
-      removed: []
-    },
-
-    matches: {
-      table: 'match',
-      edited: [],
-      removed: []
-    }
-  })
-  return { changes, players, session, matches, player, team_A, team_B, p1, p2, p3, p4 }
+  return { players, session, matches, player, team_A, team_B, p1, p2, p3, p4 }
 })
