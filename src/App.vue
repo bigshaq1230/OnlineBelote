@@ -21,6 +21,9 @@ onMounted(async () => {
   if (!session.value) {
     router.push('/auth')
   }
+  else {
+    router.push('/home')
+  }
 
 
 });
@@ -38,7 +41,7 @@ const signOut = () => {
         <RouterLink to="/account">Account</RouterLink>
       </li>
       <li>
-        <RouterLink to="/">New Match</RouterLink>
+        <RouterLink to="/home">Home</RouterLink>
       </li>
     </ul>
   </div>

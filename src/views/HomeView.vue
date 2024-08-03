@@ -1,7 +1,13 @@
 <template>
     <div class="grid">
         <div class="grid_item">match</div>
-        <div class="grid_item">frinds and request</div>
+        <div class="grid_item">
+            social
+            <ul>
+                <li v-for="f in Friends">{{  f.player_id }}</li>
+
+            </ul>
+        </div>
     </div>
 </template>
 
@@ -14,12 +20,19 @@ import { onMounted, ref } from 'vue';
 import { useData } from '@/stores/data';
 import { storeToRefs } from 'pinia';
 import { handleError } from '@/func';
+import { createRouter } from 'vue-router';
 const store = useData()
 const { player, session } = storeToRefs(store)
 let Friends = ref([])
 let outFriends = ref([])
 let incomingFriends = ref([])
-
+const router = createRouter({
+    routes:[
+        {
+            path:'/search/',
+        }
+    ]
+})
 async function getFriends() {
     const userId = session.value.user.id
     const { data: friends, error } = await supabase
@@ -43,7 +56,6 @@ async function getFriends() {
     }
 }
 
-// Usage
 
 const getIncomingFriends = async () => {
     const { data: data, error } = await supabase
@@ -59,7 +71,7 @@ const getIncomingFriends = async () => {
 
 }
 onMounted(async () => {
-    getFriends()
+    await getFriends()
 })
 
 
