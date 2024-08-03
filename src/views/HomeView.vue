@@ -15,35 +15,35 @@ import { useData } from '@/stores/data';
 import { storeToRefs } from 'pinia';
 import { handleError } from '@/func';
 const store = useData()
-const { player,session } = storeToRefs(store)
+const { player, session } = storeToRefs(store)
 let Friends = ref([])
 let outFriends = ref([])
 let incomingFriends = ref([])
-const getFriends = async () => {
-    console.log(session.value)
-    const { data: data, error } = await supabase
-        .from('relation')
-        .select(`player:player_id!inner(*)`)
-        .or(`sender_id.eq.${session.value.user.id},receiver_id.eq.${session.value.user.id}`)
-        .eq('request', false);
 
-    handleError(error)
-
-    Friends.value = data
-}
-
-const getOutGoingFriendRequest = async () => {
-    const { data: data, error } = await supabase
+async function getFriends() {
+    const userId = session.value.user.id
+    const { data: friends, error } = await supabase
         .from('relation')
         .select(`
-    player:receiver_id(*)
+    sender:sender_id(*),
+    receiver:receiver_id(*)
   `)
-        .eq('sender_id', session.value.user.id)
-        .eq('request', true);
+        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+        .eq('request', false);
 
-    handleError(error)
-    outFriends.value = data
+    if (error) {
+        console.error('Error fetching friends:', error);
+    } else {
+        // Map over the data to extract the friend player details
+        const friendDetails = friends.map(relation => {
+            // If the user is the sender, the friend is the receiver, and vice versa
+            return relation.sender_id === userId ? relation.receiver : relation.sender;
+        });
+        Friends.value = friendDetails
+    }
 }
+
+// Usage
 
 const getIncomingFriends = async () => {
     const { data: data, error } = await supabase
@@ -58,13 +58,11 @@ const getIncomingFriends = async () => {
     incomingFriends = data
 
 }
+onMounted(async () => {
+    getFriends()
+})
 
-onMounted ( async() => {
-    setTimeout(() => {
-  console.log("Delayed for 1 second.");
-}, 1000);
-    await getFriends()
-} )
+
 </script>
 
 <style scoped>

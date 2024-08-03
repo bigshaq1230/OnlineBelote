@@ -14,11 +14,9 @@ onMounted(async () => {
 
   await supabase.auth.getSession().then(({ data }) => {
     session.value = data.session
-
   })
   supabase.auth.onAuthStateChange((_, _session) => {
     session.value = _session
-
   })
   if (!session.value) {
     router.push('/auth')
@@ -46,7 +44,7 @@ const signOut = () => {
   </div>
   <RouterView /><br>
     <button v-if="session" @click="signOut">Sign Out!</button>
-  
+
 
 </template>
 
