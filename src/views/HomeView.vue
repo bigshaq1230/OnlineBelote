@@ -3,10 +3,12 @@
         <div class="grid_item">match</div>
         <div class="grid_item">
             social
-            <ul>
-                <li v-for="f in Friends">{{  f.player_id }}</li>
-
-            </ul>
+            <table><tr>
+                <td><RouterLink to="friend_list">friend list</RouterLink></td>
+                <td><RouterLink to="search" > search </RouterLink></td>
+                <td><RouterLink to="pending" >pending</RouterLink></td>
+            </tr></table>
+            <RouterView name="home" ></RouterView>
         </div>
     </div>
 </template>
@@ -20,19 +22,13 @@ import { onMounted, ref } from 'vue';
 import { useData } from '@/stores/data';
 import { storeToRefs } from 'pinia';
 import { handleError } from '@/func';
-import { createRouter } from 'vue-router';
+
 const store = useData()
 const { player, session } = storeToRefs(store)
 let Friends = ref([])
 let outFriends = ref([])
 let incomingFriends = ref([])
-const router = createRouter({
-    routes:[
-        {
-            path:'/search/',
-        }
-    ]
-})
+
 async function getFriends() {
     const userId = session.value.user.id
     const { data: friends, error } = await supabase
