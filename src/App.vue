@@ -1,54 +1,50 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import { supabase } from './supabase/supabase'
 import { useData } from './stores/data'
 import { storeToRefs } from 'pinia'
-import { handleError } from './func'
 import router from './router'
+
 const store = useData()
 const { session } = storeToRefs(store)
 
-
 onMounted(async () => {
+  const { data } = await supabase.auth.getSession()
+  session.value = data.session
 
-  await supabase.auth.getSession().then(({ data }) => {
-    session.value = data.session
-  })
   supabase.auth.onAuthStateChange((_, _session) => {
     session.value = _session
   })
+
   if (!session.value) {
     router.push('/auth')
+  } else {
+    router.push('/home/')
   }
-  else {
-    router.push('/home')
-  }
+})
 
-
-});
-
-const signOut = () => {
-  supabase.auth.signOut();
-  localStorage.clear();
+const signOut = async () => {
+  await supabase.auth.signOut()
+  localStorage.clear()
+  session.value = null
+  router.push('/auth')
 }
 </script>
 
 <template>
   <div v-if="session">
-    <ul >
+    <ul>
       <li>
         <RouterLink to="/account">Account</RouterLink>
       </li>
       <li>
-        <RouterLink to="/home">Home</RouterLink>
+        <RouterLink to="/home/">Home</RouterLink>
       </li>
     </ul>
+    <button @click="signOut">Sign Out!</button>
   </div>
-  <RouterView /><br>
-    <button v-if="session" @click="signOut">Sign Out!</button>
-
-
+  <RouterView />
 </template>
 
 <style scoped>

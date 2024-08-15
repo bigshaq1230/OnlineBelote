@@ -1,77 +1,66 @@
 <template>
-    <div class="grid">
-        <div class="grid_item">match</div>
-        <div class="grid_item">
-            social
-            <table><tr>
-                <td><RouterLink to="friend_list">friend list</RouterLink></td>
-                <td><RouterLink to="search" > search </RouterLink></td>
-                <td><RouterLink to="pending" >pending</RouterLink></td>
-            </tr></table>
-            <RouterView name="home" ></RouterView>
-        </div>
+  <div class="grid">
+    <div class="grid_item">match</div>
+    <div class="grid_item">
+      social
+      <table>
+        <tr>
+          <td><RouterLink to="/home/">Friend list</RouterLink></td>
+          <td><RouterLink to="search">Search</RouterLink></td>
+          <td><RouterLink to="pending">Pending</RouterLink></td>
+        </tr>
+      </table>
+      <!-- Render the active child component here -->
+      <RouterView  />
     </div>
+  </div>
 </template>
 
-
-
-
 <script setup>
-import { supabase } from '@/supabase/supabase';
-import { onMounted, ref } from 'vue';
-import { useData } from '@/stores/data';
-import { storeToRefs } from 'pinia';
-import { handleError } from '@/func';
+import { supabase } from '@/supabase/supabase'
+import { onMounted, ref } from 'vue'
+import { useData } from '@/stores/data'
+import { storeToRefs } from 'pinia'
+import { handleError } from '@/func'
 
 const store = useData()
-const { player, session } = storeToRefs(store)
-let Friends = ref([])
-let outFriends = ref([])
-let incomingFriends = ref([])
+const { session } = storeToRefs(store)
+const Friends = ref([])
+const incomingFriends = ref([])
 
-async function getFriends() {
-    const userId = session.value.user.id
-    const { data: friends, error } = await supabase
-        .from('relation')
-        .select(`
-    sender:sender_id(*),
-    receiver:receiver_id(*)
-  `)
-        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
-        .eq('request', false);
-
-    if (error) {
-        console.error('Error fetching friends:', error);
-    } else {
-        // Map over the data to extract the friend player details
-        const friendDetails = friends.map(relation => {
-            // If the user is the sender, the friend is the receiver, and vice versa
-            return relation.sender_id === userId ? relation.receiver : relation.sender;
-        });
-        Friends.value = friendDetails
-    }
+const getFriends = async () => {
+  const userId = session.value.user.id
+  const { data:friends, error:friendsError } = await supabase
+  .from('player')
+  .select()
+  .in('player_id',)
+  const { data, error } = await supabase
+  .from('relation')
+  .select()
+  .or(`receiver_id.eq.${userId},sender_id.eq.${userId}`)
+  .eq('request',false)
+  handleError(error)
+  console.log(data)
+  Friends.value = data
 }
 
 
 const getIncomingFriends = async () => {
-    const { data: data, error } = await supabase
-        .from('relation')
-        .select(`
-    player:sender_id(*)
-  `)
-        .eq('receiver_id', session.value.user.id)
-        .eq('request', true);
+  const { data, error } = await supabase
+    .from('relation')
+    .select('player:sender_id(*)')
+    .eq('receiver_id', session.value.user.id)
+    .eq('request', true)
 
-    handleError(error)
-    incomingFriends = data
-
+  handleError(error)
+  incomingFriends.value = data
 }
+
 onMounted(async () => {
-    await getFriends()
+  await getFriends()
 })
-
-
 </script>
+
 
 <style scoped>
 .grid {

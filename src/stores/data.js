@@ -17,8 +17,9 @@ export const useData = defineStore('data', () => {
   })
   let players = ref()
   let matches = ref()
+  let pendingFriends = ref([])
+  let alreadyFriends = ref([])
 
 
-
-  return { players, session, matches, player, team_A, team_B, p1, p2, p3, p4 }
+  return { pendingFriends, alreadyFriends, players, session, matches, player, team_A, team_B, p1, p2, p3, p4 }
 })
