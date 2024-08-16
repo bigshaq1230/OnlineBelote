@@ -21,10 +21,8 @@ async function callback(response) {
         })
         const { error: playerError, data: PlayerData, count } = await supabase.from('player').select('*', { count: 'exact' }).eq('player_id', session.value.user.id)
         handleError(playerError)
-        console.log(count)
 
         // justs get own player Data
-        console.log(PlayerData[0])
         player.value = PlayerData[0]
         router.replace('/')
 

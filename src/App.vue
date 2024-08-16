@@ -1,13 +1,25 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import {  onMounted, ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import { supabase } from './supabase/supabase'
 import { useData } from './stores/data'
 import { storeToRefs } from 'pinia'
 import router from './router'
+import { handleError } from './func'
 
 const store = useData()
-const { session } = storeToRefs(store)
+const { session, player } = storeToRefs(store)
+
+const getownplayer = async() => {
+  const { data , error } = await supabase
+  .from('player')
+  .select()
+  .eq('player_id',session.value.user.id).single()
+  handleError(error)
+  player.value = data
+}
+
+
 
 onMounted(async () => {
   const { data } = await supabase.auth.getSession()
@@ -20,8 +32,9 @@ onMounted(async () => {
   if (!session.value) {
     router.push('/auth')
   } else {
-    router.push('/home/')
+    router.push('/home')
   }
+  await getownplayer()
 })
 
 const signOut = async () => {
@@ -39,74 +52,21 @@ const signOut = async () => {
         <RouterLink to="/account">Account</RouterLink>
       </li>
       <li>
-        <RouterLink to="/home/">Home</RouterLink>
+        <RouterLink to="/home">Home</RouterLink>
+      </li>
+      <li @click="signOut">
+        <RouterLink to="home/">Sign Out!</RouterLink>
       </li>
     </ul>
-    <button @click="signOut">Sign Out!</button>
   </div>
   <RouterView />
 </template>
 
 <style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
+ul {
+  display: flex;
+  gap: 5%;
+  list-style-type: none;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
-}
 </style>

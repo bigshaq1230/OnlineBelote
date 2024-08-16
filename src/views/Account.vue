@@ -1,12 +1,12 @@
 <template>
     <form @submit.prevent="">
         <label>first name :</label>
-        <input type="text" name="" id="" v-model="player.player_name">
+        <input type="text" name="" id="" v-model="player.player_name" >
         <br>
-        <img :src="player.on_device_url" alt="">
+        <img :src="player.avatar_url" alt="">
         <br>
-        <label> change image:</label>
-        <input type="file" id="single" accept="image/*" @change="basic_handle" />
+        <label for="avatar url">avatar url::: -> </label>
+        <input type="text" name="" id="avatar url" v-model="player.avatar_url">
         <br>
         <button @click="updateInfo">update info!</button>
     </form>
@@ -27,39 +27,14 @@ const { session, player } = storeToRefs(store)
 let files = ref([]);
 
 async function updateInfo() {
-    
-    const player2 = JSON.parse(JSON.stringify(player.value))
-    delete player2?.on_device_url
 
-    player2.player_id = session.value.user.id
     player.value.player_id = session.value.user.id
-    await uploadAvatar()
-    const { error } = await supabase.from('player').upsert(player2)
+    const { error } = await supabase.from('player').upsert(player.value)
     handleError(error)
 
-    router.replace('/')
+    router.replace('/home')
 }
-function basic_handle(evt) {
-    files.value = evt.target.files;
-    const file = files.value[0]
-    player.value.on_device_url = URL.createObjectURL(file)
-}
-const uploadAvatar = async () => {
-    if (files.value.length === 0) {
-        return;
-    }
-    const file = files.value[0];
-    const fileExt = file.name.split('.').pop();
-    const filePath = `${player.value.user_id}.${fileExt}`;
 
-    const { error: uploadError } = await supabase
-        .storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true });
-
-    handleError(uploadError)
-    player.value.avatar_url = filePath
-};
 </script>
 <style>
 img {

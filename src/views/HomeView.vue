@@ -1,17 +1,41 @@
 <template>
   <div class="grid">
-    <div class="grid_item">match</div>
     <div class="grid_item">
-      social
-      <table>
-        <tr>
-          <td><RouterLink to="/home/">Friend list</RouterLink></td>
-          <td><RouterLink to="search">Search</RouterLink></td>
-          <td><RouterLink to="pending">Pending</RouterLink></td>
-        </tr>
-      </table>
-      <!-- Render the active child component here -->
-      <RouterView  />
+      <div style="display: flex;">
+        team A ->
+        <div class="player">p1</div>
+        <div class="player">p2</div>
+      </div>
+      <div style="display: flex;">
+        team B ->
+        <div class="player">p3</div>
+        <div class="player">p4</div>
+      </div>
+    </div>
+    <div class="grid_item">
+      <details open>
+        <summary>friends</summary>
+        <ul>
+          <li v-for="friend in friends">{{ friend.player_name }} <button @click="handleInvite(friend.player_id)">invite</button> </li>
+        </ul>
+      </details>
+      <details>
+        <summary>outgoing invites</summary>
+        <ul>
+          <li v-if="outGoingFriends.length > 0" v-for="outgoing in outGoingFriends">
+            {{ outgoing.player_name }}
+          </li>
+        </ul>
+      </details>
+      <details>
+        <summary>incoming invites</summary>
+        <ul>
+          <li v-if="incomingFriends.length > 0" v-for="incoming in incomingFriends">
+            {{ incoming.player_name }}
+          </li>
+        </ul>
+      </details>
+
     </div>
   </div>
 </template>
@@ -25,51 +49,92 @@ import { handleError } from '@/func'
 
 const store = useData()
 const { session } = storeToRefs(store)
-const Friends = ref([])
-const incomingFriends = ref([])
 
-const getFriends = async () => {
-  const userId = session.value.user.id
-  const { data:friends, error:friendsError } = await supabase
-  .from('player')
-  .select()
-  .in('player_id',)
-  const { data, error } = await supabase
-  .from('relation')
-  .select()
-  .or(`receiver_id.eq.${userId},sender_id.eq.${userId}`)
-  .eq('request',false)
-  handleError(error)
-  console.log(data)
-  Friends.value = data
-}
+let friends = ref([])
+let incomingFriends = ref([])
+let outGoingFriends = ref([])
 
 
-const getIncomingFriends = async () => {
+
+
+const defaultUrl = "https://www.google.com/url?sa=i&url=https%3A%2F%2Fpngtree.com%2Fso%2Fdefault-avatar&psig=AOvVaw1bV6qALq1_v6_brl0i4gxS&ust=1723851338900000&source=images&cd=vfe&opi=89978449&ved=0CBEQjRxqFwoTCIjowvmU-IcDFQAAAAAdAAAAABAE"
+
+
+const getRelationIDs = async () => {
+
   const { data, error } = await supabase
     .from('relation')
-    .select('player:sender_id(*)')
-    .eq('receiver_id', session.value.user.id)
-    .eq('request', true)
-
+    .select()
+    .or(`receiver_id.eq.${userID},sender_id.eq.${userID}`)
   handleError(error)
-  incomingFriends.value = data
+  return data
 }
 
+const getPlayerData = async (id_data) => {
+
+  const { error, data } = await supabase
+    .from('player')
+    .select()
+    .in('player_id', id_data)
+
+  handleError(error)
+  return data
+
+}
+
+var userID = session.value.user.id
 onMounted(async () => {
-  await getFriends()
+  const relations = await getRelationIDs()
+  let outgoingIDs = []
+  let incomingIDs = []
+  let friendIDs = []
+
+  relations.forEach(element => {
+    if (element.request === false) {
+      if (element.sender_id === userID) { friendIDs.push(element.receiver_id); }
+      else friendIDs.push(element.sender_id)
+    }
+    else {
+      if (element.sender_id === userID) outgoingIDs.push(element.receiver_id)
+      else incomingIDs.push(element.sender_id)
+    }
+  });
+  const bruh = friendIDs.concat(outgoingIDs, incomingIDs)
+  let list = new Set(bruh)
+  let playerData = await getPlayerData([...list])
+
+  function resolvePlayers(list_id, to_list) {
+    list_id.forEach(element => {
+      const index = playerData.findIndex((l) => l.player_id === element)
+      to_list.value.push(playerData[index])
+    });
+  }
+
+  resolvePlayers(outgoingIDs, outGoingFriends)
+  resolvePlayers(incomingIDs, incomingFriends)
+  resolvePlayers(friendIDs, friends)
+
+
+
+
 })
 </script>
 
 
 <style scoped>
 .grid {
-    display: grid;
-    grid-template-columns: 70% 30%;
+  display: grid;
+  grid-template-columns: 70% 30%;
 
 }
 
 .grid_item {
-    display: block;
+  display: block;
+}
+
+.player {
+  display: block;
+  width: 20%;
+  height: 20%;
 }
 </style>
