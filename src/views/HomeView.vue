@@ -1,22 +1,14 @@
 <template>
   <div class="grid">
     <div class="grid_item">
-      <div style="display: flex;">
-        team A ->
-        <div class="player">p1</div>
-        <div class="player">p2</div>
-      </div>
-      <div style="display: flex;">
-        team B ->
-        <div class="player">p3</div>
-        <div class="player">p4</div>
-      </div>
+      <button @click="createParty">create party</button>
     </div>
     <div class="grid_item">
       <details open>
         <summary>friends</summary>
         <ul>
-          <li v-for="friend in friends">{{ friend.player_name }} <button @click="handleInvite(friend.player_id)">invite</button> </li>
+          <li v-for="friend in friends">{{ friend.player_name }} <button @click="sendInvite(friend.player_id)"
+              v-if="partycreated">invite</button> </li>
         </ul>
       </details>
       <details>
@@ -53,8 +45,56 @@ const { session } = storeToRefs(store)
 let friends = ref([])
 let incomingFriends = ref([])
 let outGoingFriends = ref([])
+let invites = ref([])
+let party = ref({})
+let partycreated = false
+async function createParty() {
+  const { data, error } = await supabase
+    .from('match')
+    .insert()
+    .select()
+    .single()
+  handleError(error)
+  partycreated = true
+  party.value = data
+  subToMatch()
+}
+const subToMatch = () => {
+  supabase.channel('match')
+    .on("postgres_changes",
+      {
+        event: '*',
+        schema: 'public',
+        table: 'match',
+        filter: `id.eq.${party.value.id}`
+      },
+      (payload) => { party.value = payload }
+    )
+}
+const subToInvites = () => {
+  supabase.channel('invite')
+    .on("postgres_changes",
+      {
+        event: '*',
+        schema: 'public',
+        table: 'invite',
+        filter: `receiver_id=eq.${userID}`
+      },
+      (payload) => { party.value = payload.new }
+    )
 
+}
+async function sendInvite(id) {
+  const { data, error } = await supabase
+    .from('invite')
+    .insert({
+      sender_id: userID,
+      receiver_id: id,
+      match_id: party.value.id
+    })
+  handleError(error)
 
+}
 
 
 const defaultUrl = "https://www.google.com/url?sa=i&url=https%3A%2F%2Fpngtree.com%2Fso%2Fdefault-avatar&psig=AOvVaw1bV6qALq1_v6_brl0i4gxS&ust=1723851338900000&source=images&cd=vfe&opi=89978449&ved=0CBEQjRxqFwoTCIjowvmU-IcDFQAAAAAdAAAAABAE"
@@ -82,7 +122,7 @@ const getPlayerData = async (id_data) => {
 
 }
 
-var userID = session.value.user.id
+let userID = session.value.user.id
 onMounted(async () => {
   const relations = await getRelationIDs()
   let outgoingIDs = []
