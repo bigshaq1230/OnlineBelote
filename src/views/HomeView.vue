@@ -13,9 +13,12 @@
       </details>
       <details open>
         <summary>friends</summary>
+        <input type="text" v-model="inputID" > <button @click="handleAddFriend">Add!</button>
         <ul>
-          <li v-for="friend in friends">{{ friend.player_name }} <button @click="sendInvite(friend.player_id)"
-              v-if="partycreated">invite</button> </li>
+          <li v-for="friend in friends">
+            {{ friend.player_name }} <button @click="sendInvite(friend.player_id)"
+            v-if="partycreated == true">invite</button>
+            </li>
         </ul>
       </details>
       <details>
@@ -49,13 +52,30 @@ import { handleError } from '@/func'
 const store = useData()
 const { session } = storeToRefs(store)
 let userID = session.value.user.id
-
+let inputID = ref("")
 let friends = ref([])
 let incomingFriends = ref([])
 let outGoingFriends = ref([])
 let invites = ref([])
 let party = ref({})
 let partycreated = false
+
+const handleAddFriend = async() => {
+  const { data , error } = await supabase
+  .from('relation')
+  .insert({
+    sender_id : userID,
+    receiver_id :  inputID.value
+  })
+  handleError(error)
+  console.log(data)
+  location.reload(
+    
+  )
+}
+
+
+
 async function createParty() {
   const { data, error } = await supabase
     .from('match')
@@ -64,6 +84,7 @@ async function createParty() {
     .single()
   handleError(error)
   partycreated = true
+  console.log(partycreated)
   party.value = data
   subToMatch()
 }
@@ -146,7 +167,6 @@ onMounted(async () => {
   let outgoingIDs = []
   let incomingIDs = []
   let friendIDs = []
-
   relations.forEach(element => {
     if (element.request === false) {
       if (element.sender_id === userID) { friendIDs.push(element.receiver_id); }
@@ -167,7 +187,7 @@ onMounted(async () => {
       to_list.value.push(playerData[index])
     });
   }
-
+  
   resolvePlayers(outgoingIDs, outGoingFriends)
   resolvePlayers(incomingIDs, incomingFriends)
   resolvePlayers(friendIDs, friends)
