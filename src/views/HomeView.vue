@@ -5,6 +5,13 @@
     </div>
     <div class="grid_item">
       <details open>
+        <summary>invites</summary>
+        <ul>
+          <li v-for="i in invites"> {{i}} </li>
+        </ul>
+
+      </details>
+      <details open>
         <summary>friends</summary>
         <ul>
           <li v-for="friend in friends">{{ friend.player_name }} <button @click="sendInvite(friend.player_id)"
@@ -41,6 +48,7 @@ import { handleError } from '@/func'
 
 const store = useData()
 const { session } = storeToRefs(store)
+let userID = session.value.user.id
 
 let friends = ref([])
 let incomingFriends = ref([])
@@ -51,7 +59,7 @@ let partycreated = false
 async function createParty() {
   const { data, error } = await supabase
     .from('match')
-    .insert()
+    .insert({})
     .select()
     .single()
   handleError(error)
@@ -71,6 +79,17 @@ const subToMatch = () => {
       (payload) => { party.value = payload }
     )
 }
+
+
+const getInvites = async() => {
+  const { data, error } = await supabase
+  .from('invite')
+  .select()
+  .eq('receiver_id',userID)
+  handleError(error)
+  invites.value = data
+  subToInvites()
+}
 const subToInvites = () => {
   supabase.channel('invite')
     .on("postgres_changes",
@@ -80,7 +99,7 @@ const subToInvites = () => {
         table: 'invite',
         filter: `receiver_id=eq.${userID}`
       },
-      (payload) => { party.value = payload.new }
+      (payload) => { invites.value.push(payload.new);console.log(payload) }
     )
 
 }
@@ -122,7 +141,6 @@ const getPlayerData = async (id_data) => {
 
 }
 
-let userID = session.value.user.id
 onMounted(async () => {
   const relations = await getRelationIDs()
   let outgoingIDs = []
@@ -155,6 +173,7 @@ onMounted(async () => {
   resolvePlayers(friendIDs, friends)
 
 
+  await getInvites()
 
 
 })
