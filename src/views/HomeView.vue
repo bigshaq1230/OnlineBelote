@@ -1,55 +1,56 @@
 <template>
   <div class="grid">
+  
     <div class="grid_item">
-      <div class="flex">
-        <div class="player">
-          <span v-if="party.value?.p1">
-            <p>p1:</p>
-             {{ party.value.p1.player_name }}
-            <img :src="party.value.p1.avatar_url" alt="">
+        <div v-if="partycreated">
+        <div class="flex">
+          <div class="player">
+            <span v-if="party.value?.p1">
+              <p>p1:</p>
+               {{ party.value.p1.player_name }}
+              <img :src="party.value.p1.avatar_url" alt="">
+            </span>
+            <span v-else>
+              <p>p1</p>
+              <img :src="defaultAvatar" alt="">
+            </span>
+          </div>
+        </div>
+        <div class="flex" style="gap: 15%;">
+          <div class="player">
+            <span v-if="party.value?.p3">
+            <p>p3:</p> {{ party.value.p3.player_name }}
+            <img :src="party.value.p3.avatar_url" alt="">
           </span>
           <span v-else>
-            <p>p1</p>
+            <p>p3</p>
             <img :src="defaultAvatar" alt="">
           </span>
+          </div>
+          <div class="player">
+            <span v-if="party.value?.p4">
+            <p>p4:</p> {{ party.value.p4.player_name }}
+            <img :src="party.value.p4.avatar_url" alt="">
+          </span>
+          <span v-else>
+            <p>p4</p>
+            <img :src="defaultAvatar" alt="">
+          </span>
+          </div>
         </div>
-      </div>
-
-
-      <div class="flex" style="gap: 15%;">
-        <div class="player">
-          <span v-if="party.value?.p3">
-          <p>p3:</p> {{ party.value.p3.player_name }}
-          <img :src="party.value.p3.avatar_url" alt="">
-        </span>
-        <span v-else>
-          <p>p3</p>
-          <img :src="defaultAvatar" alt="">
-        </span>
+        <div class="flex">
+          <div class="player">
+            <span v-if="party.value?.p2">
+            <p>p2:</p> {{ party.value.p2.player_name }}
+            <img :src="party.value.p2.avatar_url" alt="">
+          </span>
+          <span v-else>
+            <p>p2</p>
+            <img :src="defaultAvatar" alt="">
+          </span>
+          </div>
         </div>
-        <div class="player">
-          <span v-if="party.value?.p4">
-          <p>p4:</p> {{ party.value.p4.player_name }}
-          <img :src="party.value.p4.avatar_url" alt="">
-        </span>
-        <span v-else>
-          <p>p4</p>
-          <img :src="defaultAvatar" alt="">
-        </span>
-        </div>
-      </div>
-      <div class="flex">
-        <div class="player">
-          <span v-if="party.value?.p2">
-          <p>p2:</p> {{ party.value.p2.player_name }}
-          <img :src="party.value.p2.avatar_url" alt="">
-        </span>
-        <span v-else>
-          <p>p2</p>
-          <img :src="defaultAvatar" alt="">
-        </span>
-        </div>
-      </div>
+    </div>
       <button @click="createParty" v-if="partycreated == false">create party</button>
     </div>
     <div class="grid_item">
@@ -92,6 +93,9 @@
     </div>
   </div>
 </template>
+
+
+
 
 <style scoped>
 .grid {
@@ -154,16 +158,16 @@ const handleAddFriend = async () => {
     // await getFriends() // Refresh friends list
   }
 }
-
+let availble_
 // Accept invite function
 const handleAcceptInvite = async (match_id, invite_id) => {
   const { data, error } = await supabase
     .from('match')
     .select(`*,
-    p1:player!p1(player_name)
-    p2:player!p2(player_name)
-    p3:player!p3(player_name)
-    p4:player!p4(player_name)
+    p1:player!p1(player_id,player_name)
+    p2:player!p2(player_id,player_name)
+    p3:player!p3(player_id,player_name)
+    p4:player!p4(player_id,player_name)
     `)
     .eq('id', match_id)
     .single()
@@ -172,6 +176,8 @@ const handleAcceptInvite = async (match_id, invite_id) => {
   if (data) {
     partycreated.value = true
     party.value = data
+
+    
 
     const { error: deleteError } = await supabase
       .from('invite')
@@ -183,6 +189,28 @@ const handleAcceptInvite = async (match_id, invite_id) => {
   }
 }
 
+function absoluteAbominationKys() {
+  let place = 1
+  let player = {}
+  num = 0
+  while(place < 5) {
+    if (place == 1) {
+      player = party.value.p1
+    }
+    else if (place == 2) {
+      player = party.value.p2
+    }
+    else if (place == 3 ) {
+      player = party.value.p3
+    }
+    else {
+      player = party.value.p4
+    }
+  }
+
+}
+
+
 // Accept friend request function
 const handleAcceptFriend = async (id) => {
   const { data, error } = await supabase
@@ -192,6 +220,7 @@ const handleAcceptFriend = async (id) => {
       receiver_id: userID.value,
       sender_id: id
     })
+
   handleError(error)
   if (data) {
     console.log("Friend request accepted:", data)
@@ -203,7 +232,7 @@ const handleAcceptFriend = async (id) => {
 async function createParty() {
   const { data, error } = await supabase
     .from('match')
-    .insert({})
+    .insert({p1:userID})
     .select()
     .single()
   handleError(error)
