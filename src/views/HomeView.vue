@@ -1,25 +1,75 @@
 <template>
   <div class="grid">
     <div class="grid_item">
-      <button @click="createParty">create party</button>
+      <div class="flex">
+        <div class="player">
+          <span v-if="party.value?.p1">
+            <p>p1:</p>
+             {{ party.value.p1.player_name }}
+            <img :src="party.value.p1.avatar_url" alt="">
+          </span>
+          <span v-else>
+            <p>p1</p>
+            <img :src="defaultAvatar" alt="">
+          </span>
+        </div>
+      </div>
+
+
+      <div class="flex" style="gap: 15%;">
+        <div class="player">
+          <span v-if="party.value?.p3">
+          <p>p3:</p> {{ party.value.p3.player_name }}
+          <img :src="party.value.p3.avatar_url" alt="">
+        </span>
+        <span v-else>
+          <p>p3</p>
+          <img :src="defaultAvatar" alt="">
+        </span>
+        </div>
+        <div class="player">
+          <span v-if="party.value?.p4">
+          <p>p4:</p> {{ party.value.p4.player_name }}
+          <img :src="party.value.p4.avatar_url" alt="">
+        </span>
+        <span v-else>
+          <p>p4</p>
+          <img :src="defaultAvatar" alt="">
+        </span>
+        </div>
+      </div>
+      <div class="flex">
+        <div class="player">
+          <span v-if="party.value?.p2">
+          <p>p2:</p> {{ party.value.p2.player_name }}
+          <img :src="party.value.p2.avatar_url" alt="">
+        </span>
+        <span v-else>
+          <p>p2</p>
+          <img :src="defaultAvatar" alt="">
+        </span>
+        </div>
+      </div>
+      <button @click="createParty" v-if="partycreated == false">create party</button>
     </div>
     <div class="grid_item">
       <details open>
         <summary>invites</summary>
         <ul>
-          <li v-for="i in invites">  {{ i.player.player_name }} invite
-            <button @click="handleAcceptInvite(i.match_id,i.invite_id)" v-if="partycreated == false" >accept invite</button> </li>
+          <li v-for="i in invites"> {{ i.player.player_name }} invite
+            <button @click="handleAcceptInvite(i.match_id, i.invite_id)" v-if="partycreated == false">accept
+              invite</button>
+          </li>
         </ul>
 
       </details>
       <details open>
         <summary>friends</summary>
-        <input type="text" v-model="inputID" > <button @click="handleAddFriend">Add!</button>
+        <input type="text" v-model="inputID"> <button @click="handleAddFriend">Add!</button>
         <ul>
           <li v-for="friend in friends">
-            {{ friend.player_name }} <button @click="sendInvite(friend.player_id)"
-            v-if="partycreated">invite</button>
-            </li>
+            {{ friend.player_name }} <button @click="sendInvite(friend.player_id)" v-if="partycreated">invite</button>
+          </li>
         </ul>
       </details>
       <details open>
@@ -43,6 +93,35 @@
   </div>
 </template>
 
+<style scoped>
+.grid {
+  display: grid;
+  grid-template-columns: 70% 30%;
+
+}
+
+.grid_item {
+  display: block;
+}
+
+.flex {
+  display: flex;
+  justify-content: center;
+  gap: 1%;
+}
+.player img {
+  width: 100%;
+  height: 80%;
+}
+.player {
+  display: block;
+  width: 20%;
+  height: 20%;
+}
+span {
+  text-align: center;
+}
+</style>
 <script setup>
 import { supabase } from '@/supabase/supabase'
 import { onMounted, ref, watch } from 'vue'
@@ -58,11 +137,11 @@ const friends = ref([])
 const incomingFriends = ref([])
 const outGoingFriends = ref([])
 const invites = ref([])
-const party = ref(null)
+const party = ref({})
 const partycreated = ref(false)
-
+const defaultAvatar = "https://i.redd.it/i-got-bored-so-i-decided-to-draw-a-random-image-on-the-v0-4ig97vv85vjb1.png?width=1280&format=png&auto=webp&s=7177756d1f393b6e093596d06e1ba539f723264b"
 // Add friend function
-const handleAddFriend = async() => {
+const handleAddFriend = async () => {
   const { data, error } = await supabase
     .from('relation')
     .insert({
@@ -72,15 +151,20 @@ const handleAddFriend = async() => {
   handleError(error)
   if (data) {
     console.log("Friend request sent:", data)
-    await getFriends() // Refresh friends list
+    // await getFriends() // Refresh friends list
   }
 }
 
 // Accept invite function
-const handleAcceptInvite = async(match_id, invite_id) => {
+const handleAcceptInvite = async (match_id, invite_id) => {
   const { data, error } = await supabase
     .from('match')
-    .select()
+    .select(`*,
+    p1:player!p1(player_name)
+    p2:player!p2(player_name)
+    p3:player!p3(player_name)
+    p4:player!p4(player_name)
+    `)
     .eq('id', match_id)
     .single()
   handleError(error)
@@ -96,12 +180,11 @@ const handleAcceptInvite = async(match_id, invite_id) => {
     handleError(deleteError)
 
     subToMatch()
-    await getInvites() // Refresh invites
   }
 }
 
 // Accept friend request function
-const handleAcceptFriend = async(id) => {
+const handleAcceptFriend = async (id) => {
   const { data, error } = await supabase
     .from('relation')
     .update({ request: false })
@@ -112,7 +195,7 @@ const handleAcceptFriend = async(id) => {
   handleError(error)
   if (data) {
     console.log("Friend request accepted:", data)
-    await getFriends() // Refresh friends list
+    // await getFriends() // Refresh friends list
   }
 }
 
@@ -160,9 +243,18 @@ const subToInvites = () => {
         filter: `receiver_id=eq.${userID.value}`
       },
       (payload) => {
+
         console.log("Invite update:", payload)
         if (payload.eventType === 'INSERT') {
-          invites.value.push(payload.new)
+          const index = friends.value.findIndex((l) => l.player_id === payload.new.sender_id)
+          if (index !== -1) {
+            payload.new.player = friends.value[index]
+            invites.value.push(payload.new)
+          }
+          else {
+            console.log("bug here 100% tf ??")
+            console.log("accepted a match invite but not friends !")
+          }
         } else if (payload.eventType === 'DELETE') {
           invites.value = invites.value.filter(invite => invite.invite_id !== payload.old.invite_id)
         } else if (payload.eventType === 'UPDATE') {
@@ -177,7 +269,7 @@ const subToInvites = () => {
 }
 
 // Get invites
-const getInvites = async() => {
+const getInvites = async () => {
   const { data, error } = await supabase
     .from('invite')
     .select(`
@@ -190,6 +282,7 @@ const getInvites = async() => {
   console.log(data)
   if (data) {
     invites.value = data
+    console.log("get invites: ", data)
   }
 }
 
@@ -249,7 +342,7 @@ const getFriends = async () => {
     }
   })
   const allIDs = [...new Set([...friendIDs, ...outgoingIDs, ...incomingIDs])]
-  const playerData = await getPlayerData(allIDs)
+  let playerData = await getPlayerData(allIDs)
 
   friends.value = playerData.filter(player => friendIDs.includes(player.player_id))
   outGoingFriends.value = playerData.filter(player => outgoingIDs.includes(player.player_id))
@@ -263,6 +356,7 @@ onMounted(async () => {
 })
 
 // Watch for changes in userID
+/* NAH
 watch(userID, async (newUserID, oldUserID) => {
   if (newUserID !== oldUserID) {
     await getFriends()
@@ -270,23 +364,6 @@ watch(userID, async (newUserID, oldUserID) => {
     subToInvites()
   }
 })
+*/
 </script>
 
-
-<style scoped>
-.grid {
-  display: grid;
-  grid-template-columns: 70% 30%;
-
-}
-
-.grid_item {
-  display: block;
-}
-
-.player {
-  display: block;
-  width: 20%;
-  height: 20%;
-}
-</style>
