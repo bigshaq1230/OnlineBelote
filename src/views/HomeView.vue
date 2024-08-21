@@ -1,13 +1,13 @@
 <template>
   <div class="grid">
-  
+
     <div class="grid_item">
-        <div v-if="partycreated">
+      <div v-if="partycreated">
         <div class="flex">
           <div class="player">
             <span v-if="party.value?.p1">
               <p>p1:</p>
-               {{ party.value.p1.player_name }}
+              {{ party.value.p1.player_name }}
               <img :src="party.value.p1.avatar_url" alt="">
             </span>
             <span v-else>
@@ -19,38 +19,38 @@
         <div class="flex" style="gap: 15%;">
           <div class="player">
             <span v-if="party.value?.p3">
-            <p>p3:</p> {{ party.value.p3.player_name }}
-            <img :src="party.value.p3.avatar_url" alt="">
-          </span>
-          <span v-else>
-            <p>p3</p>
-            <img :src="defaultAvatar" alt="">
-          </span>
+              <p>p3:</p> {{ party.value.p3.player_name }}
+              <img :src="party.value.p3.avatar_url" alt="">
+            </span>
+            <span v-else>
+              <p>p3</p>
+              <img :src="defaultAvatar" alt="">
+            </span>
           </div>
           <div class="player">
             <span v-if="party.value?.p4">
-            <p>p4:</p> {{ party.value.p4.player_name }}
-            <img :src="party.value.p4.avatar_url" alt="">
-          </span>
-          <span v-else>
-            <p>p4</p>
-            <img :src="defaultAvatar" alt="">
-          </span>
+              <p>p4:</p> {{ party.value.p4.player_name }}
+              <img :src="party.value.p4.avatar_url" alt="">
+            </span>
+            <span v-else>
+              <p>p4</p>
+              <img :src="defaultAvatar" alt="">
+            </span>
           </div>
         </div>
         <div class="flex">
           <div class="player">
             <span v-if="party.value?.p2">
-            <p>p2:</p> {{ party.value.p2.player_name }}
-            <img :src="party.value.p2.avatar_url" alt="">
-          </span>
-          <span v-else>
-            <p>p2</p>
-            <img :src="defaultAvatar" alt="">
-          </span>
+              <p>p2:</p> {{ party.value.p2.player_name }}
+              <img :src="party.value.p2.avatar_url" alt="">
+            </span>
+            <span v-else>
+              <p>p2</p>
+              <img :src="defaultAvatar" alt="">
+            </span>
           </div>
         </div>
-    </div>
+      </div>
       <button @click="createParty" v-if="partycreated == false">create party</button>
     </div>
     <div class="grid_item">
@@ -113,15 +113,18 @@
   justify-content: center;
   gap: 1%;
 }
+
 .player img {
   width: 100%;
   height: 80%;
 }
+
 .player {
   display: block;
   width: 20%;
   height: 20%;
 }
+
 span {
   text-align: center;
 }
@@ -158,7 +161,7 @@ const handleAddFriend = async () => {
     // await getFriends() // Refresh friends list
   }
 }
-let availble_
+
 // Accept invite function
 const handleAcceptInvite = async (match_id, invite_id) => {
   const { data, error } = await supabase
@@ -177,7 +180,7 @@ const handleAcceptInvite = async (match_id, invite_id) => {
     partycreated.value = true
     party.value = data
 
-    
+
 
     const { error: deleteError } = await supabase
       .from('invite')
@@ -189,28 +192,27 @@ const handleAcceptInvite = async (match_id, invite_id) => {
   }
 }
 
-function absoluteAbominationKys() {
-  let place = 1
-  let player = {}
-  num = 0
-  while(place < 5) {
-    if (place == 1) {
-      player = party.value.p1
+const insert = async(id) => {
+  let list = [
+    party.value.p1,
+    party.value.p2,
+    party.value.p3,
+    party.value.p4
+  ]
+
+  list.forEach( async (element,index) => {
+    if (element == null) {
+      const { error } = await supabase
+      .from('match')
+      .update(`p${index+1}`,id)
+      handleError(error)
+      return
     }
-    else if (place == 2) {
-      player = party.value.p2
-    }
-    else if (place == 3 ) {
-      player = party.value.p3
-    }
-    else {
-      player = party.value.p4
-    }
+  });
+
+  if (party.value.p1 == null) {
   }
-
 }
-
-
 // Accept friend request function
 const handleAcceptFriend = async (id) => {
   const { data, error } = await supabase
@@ -232,7 +234,7 @@ const handleAcceptFriend = async (id) => {
 async function createParty() {
   const { data, error } = await supabase
     .from('match')
-    .insert({p1:userID})
+    .insert({ p1: userID })
     .select()
     .single()
   handleError(error)
@@ -254,8 +256,11 @@ const subToMatch = () => {
         filter: `id=eq.${party.value.id}`
       },
       (payload) => {
-        console.log("Match update:", payload)
-        party.value = payload.new
+        if (payload.eventType == 'UPDATE') {
+          if (payload.new.collum == 'p1') {
+            
+          }
+        }
       }
     )
     .subscribe()
@@ -385,7 +390,8 @@ onMounted(async () => {
 })
 
 // Watch for changes in userID
-/* NAH
+// NAH
+/* 
 watch(userID, async (newUserID, oldUserID) => {
   if (newUserID !== oldUserID) {
     await getFriends()
@@ -395,4 +401,3 @@ watch(userID, async (newUserID, oldUserID) => {
 })
 */
 </script>
-
