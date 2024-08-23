@@ -1,57 +1,56 @@
 <template>
   <div class="grid">
-
     <div class="grid_item">
       <div v-if="partycreated">
         <div class="flex">
           <div class="player">
-            <span v-if="party.value?.p1">
-              <p>p1:</p>
-              {{ party.value.p1.player_name }}
-              <img :src="party.value.p1.avatar_url" alt="">
+            p1
+            <span v-if="Object.is(party.value?.p1, null)">
+              <p>p1 not here</p>
+              <img :src="defaultAvatar" alt="Default Avatar">
             </span>
-            <span v-else>
-              <p>p1</p>
-              <img :src="defaultAvatar" alt="">
+            <span v-else-if="party.value?.p1">
+              <p>p1: {{ party.value.p1.player_name }}</p>
+              <img :src="party.value.p1.avatar_url" alt="Player 1 Avatar" @error="handleImageError">
             </span>
           </div>
         </div>
         <div class="flex" style="gap: 15%;">
           <div class="player">
             <span v-if="party.value?.p3">
-              <p>p3:</p> {{ party.value.p3.player_name }}
-              <img :src="party.value.p3.avatar_url" alt="">
+              <p>p3: {{ party.value.p3.player_name }}</p>
+              <img :src="party.value.p3.avatar_url" alt="Player 3 Avatar">
             </span>
             <span v-else>
               <p>p3</p>
-              <img :src="defaultAvatar" alt="">
+              <img :src="defaultAvatar" alt="Default Avatar">
             </span>
           </div>
           <div class="player">
             <span v-if="party.value?.p4">
-              <p>p4:</p> {{ party.value.p4.player_name }}
-              <img :src="party.value.p4.avatar_url" alt="">
+              <p>p4: {{ party.value.p4.player_name }}</p>
+              <img :src="party.value.p4.avatar_url" alt="Player 4 Avatar">
             </span>
             <span v-else>
               <p>p4</p>
-              <img :src="defaultAvatar" alt="">
+              <img :src="defaultAvatar" alt="Default Avatar">
             </span>
           </div>
         </div>
         <div class="flex">
           <div class="player">
             <span v-if="party.value?.p2">
-              <p>p2:</p> {{ party.value.p2.player_name }}
-              <img :src="party.value.p2.avatar_url" alt="">
+              <p>p2: {{ party.value.p2.player_name }}</p>
+              <img :src="party.value.p2.avatar_url" alt="Player 2 Avatar">
             </span>
             <span v-else>
               <p>p2</p>
-              <img :src="defaultAvatar" alt="">
+              <img :src="defaultAvatar" alt="Default Avatar">
             </span>
           </div>
         </div>
       </div>
-      <button @click="createParty" v-if="partycreated == false">create party</button>
+      <button @click="createParty" v-else>Create Party</button>
     </div>
     <div class="grid_item">
       <details open>
@@ -137,10 +136,11 @@ import { storeToRefs } from 'pinia'
 import { handleError } from '@/func'
 
 const store = useData()
-const { session } = storeToRefs(store)
+const { session, player } = storeToRefs(store)
 const userID = ref(session.value.user.id)
 const inputID = ref("")
 const friends = ref([])
+let playerData = []
 const incomingFriends = ref([])
 const outGoingFriends = ref([])
 const invites = ref([])
@@ -179,40 +179,40 @@ const handleAcceptInvite = async (match_id, invite_id) => {
   if (data) {
     partycreated.value = true
     party.value = data
-
-
-
+    setTimeout(1000, () => console.log("waait 1 sec"))
+    subToMatch()
     const { error: deleteError } = await supabase
       .from('invite')
       .delete()
       .eq('invite_id', invite_id)
     handleError(deleteError)
-
-    subToMatch()
+    insert(userID.value, party.value.id)
   }
 }
+const insert = async (id, match_id) => {
+  const players = ['p1', 'p2', 'p3', 'p4'];
 
-const insert = async(id) => {
-  let list = [
-    party.value.p1,
-    party.value.p2,
-    party.value.p3,
-    party.value.p4
-  ]
-
-  list.forEach( async (element,index) => {
-    if (element == null) {
+  for (const player of players) {
+    if (party.value[player] === null) {
+      const updateObj = { [player]: id };
+      party.value[player] = id
       const { error } = await supabase
-      .from('match')
-      .update(`p${index+1}`,id)
-      handleError(error)
-      return
-    }
-  });
+        .from('match')
+        .update(updateObj)
+        .eq('id', match_id);
 
-  if (party.value.p1 == null) {
+      if (error) {
+        handleError(error);
+        return false;
+      }
+
+      return true;
+    }
   }
-}
+
+  console.log('No empty slots available');
+  return false;
+};
 // Accept friend request function
 const handleAcceptFriend = async (id) => {
   const { data, error } = await supabase
@@ -234,7 +234,7 @@ const handleAcceptFriend = async (id) => {
 async function createParty() {
   const { data, error } = await supabase
     .from('match')
-    .insert({ p1: userID })
+    .insert({})
     .select()
     .single()
   handleError(error)
@@ -242,11 +242,48 @@ async function createParty() {
     partycreated.value = true
     party.value = data
     subToMatch()
+    setTimeout(1000, () => console.log("waait 1 sec"))
+    insert(userID.value, data.id)
+  }
+}
+
+watch(party, () => console.log("party: ", party.value), { deep: true })
+const getPlayer = async (id) => {
+  if (id == null) {
+    return {}
+  }
+  const index = playerData.findIndex((p) => p.player_id === id)
+  if (index !== -1) {
+    return playerData[index]
+  }
+  else {
+    const { data, error } = await supabase
+      .from('player')
+      .select()
+      .eq('player_id', id)
+      .single()
+    handleError(error)
+    if (data) {
+      playerData.push(data)
+      return data
+    }
   }
 }
 
 // Subscribe to match changes
 const subToMatch = () => {
+  console.log("Initializing subToMatch function");
+
+  if (!supabase) {
+    console.error("Supabase client is not initialized");
+    return null;
+  }
+
+  if (!party.value || !party.value.id) {
+    console.error("party.value or party.value.id is undefined");
+    return null;
+  }
+
   const channel = supabase.channel('match')
     .on("postgres_changes",
       {
@@ -256,16 +293,35 @@ const subToMatch = () => {
         filter: `id=eq.${party.value.id}`
       },
       (payload) => {
-        if (payload.eventType == 'UPDATE') {
-          if (payload.new.collum == 'p1') {
-            
-          }
+        console.log("Received match payload:", payload);
+
+        if (!payload || !payload.new) {
+          console.error("Invalid payload received:", payload);
+          return;
         }
+
+        party.value = payload.new;
+
+        ['p1', 'p2', 'p3', 'p4'].forEach(async (player) => {
+          if (party.value[player]) {
+            party.value[player] = await getPlayer(party.value[player]);
+          }
+        });
+
+        console.log("Updated party value:", party.value);
       }
     )
-    .subscribe()
-}
+    .on('error', (error) => {
+      console.error("Supabase channel error:", error);
+    });
 
+  console.log("Subscribing to channel");
+  const subscription = channel.subscribe((status) => {
+    console.log("Subscription status:", status);
+  });
+
+  return subscription;
+}
 // Subscribe to invites
 const subToInvites = () => {
   const channel = supabase.channel('invite')
@@ -278,7 +334,6 @@ const subToInvites = () => {
       },
       (payload) => {
 
-        console.log("Invite update:", payload)
         if (payload.eventType === 'INSERT') {
           const index = friends.value.findIndex((l) => l.player_id === payload.new.sender_id)
           if (index !== -1) {
@@ -376,7 +431,7 @@ const getFriends = async () => {
     }
   })
   const allIDs = [...new Set([...friendIDs, ...outgoingIDs, ...incomingIDs])]
-  let playerData = await getPlayerData(allIDs)
+  playerData = await getPlayerData(allIDs)
 
   friends.value = playerData.filter(player => friendIDs.includes(player.player_id))
   outGoingFriends.value = playerData.filter(player => outgoingIDs.includes(player.player_id))
@@ -387,11 +442,12 @@ onMounted(async () => {
   await getFriends()
   await getInvites()
   subToInvites()
+  console.log("party: ", party.value)
 })
 
 // Watch for changes in userID
 // NAH
-/* 
+/*
 watch(userID, async (newUserID, oldUserID) => {
   if (newUserID !== oldUserID) {
     await getFriends()
