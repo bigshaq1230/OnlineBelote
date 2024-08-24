@@ -5,7 +5,7 @@
         <div class="flex">
           <div class="player">
             p1
-            <span v-if="Object.is(party.value?.p1, null)">
+            <span v-if="party?.p1 == null">
               <p>p1 not here</p>
               <img :src="defaultAvatar" alt="Default Avatar">
             </span>
