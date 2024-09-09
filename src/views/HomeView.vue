@@ -4,22 +4,21 @@
       <div v-if="partycreated">
         <div class="flex">
           <div class="player">
-            p1
-            <span v-if="Object.is(party.value?.p1, null)">
+            <span v-if="party.p1 == null">
               <p>p1 not here</p>
               <img :src="defaultAvatar" alt="Default Avatar">
             </span>
-            <span v-else-if="party.value?.p1">
-              <p>p1: {{ party.value.p1.player_name }}</p>
-              <img :src="party.value.p1.avatar_url" alt="Player 1 Avatar" @error="handleImageError">
+            <span v-else>
+              <p>p1: {{ party.p1.player_name }}</p>
+              <img :src="party.p1.avatar_url" alt="Player 1 Avatar" @error="handleImageError">
             </span>
           </div>
         </div>
         <div class="flex" style="gap: 15%;">
           <div class="player">
-            <span v-if="party.value?.p3">
-              <p>p3: {{ party.value.p3.player_name }}</p>
-              <img :src="party.value.p3.avatar_url" alt="Player 3 Avatar">
+            <span v-if="party?.p3">
+              <p>p3: {{ party.p3.player_name }}</p>
+              <img :src="party.p3.avatar_url" alt="Player 3 Avatar">
             </span>
             <span v-else>
               <p>p3</p>
@@ -27,9 +26,9 @@
             </span>
           </div>
           <div class="player">
-            <span v-if="party.value?.p4">
-              <p>p4: {{ party.value.p4.player_name }}</p>
-              <img :src="party.value.p4.avatar_url" alt="Player 4 Avatar">
+            <span v-if="party?.p4">
+              <p>p4: {{ party.p4.player_name }}</p>
+              <img :src="party.p4.avatar_url" alt="Player 4 Avatar">
             </span>
             <span v-else>
               <p>p4</p>
@@ -39,9 +38,9 @@
         </div>
         <div class="flex">
           <div class="player">
-            <span v-if="party.value?.p2">
-              <p>p2: {{ party.value.p2.player_name }}</p>
-              <img :src="party.value.p2.avatar_url" alt="Player 2 Avatar">
+            <span v-if="party?.p2">
+              <p>p2: {{ party.p2.player_name }}</p>
+              <img :src="party.p2.avatar_url" alt="Player 2 Avatar">
             </span>
             <span v-else>
               <p>p2</p>
@@ -144,7 +143,12 @@ let playerData = []
 const incomingFriends = ref([])
 const outGoingFriends = ref([])
 const invites = ref([])
-const party = ref({})
+const party = ref({
+  p1:null,
+  p2:null,
+  p3:null,
+  p4:null
+})
 const partycreated = ref(false)
 const defaultAvatar = "https://i.redd.it/i-got-bored-so-i-decided-to-draw-a-random-image-on-the-v0-4ig97vv85vjb1.png?width=1280&format=png&auto=webp&s=7177756d1f393b6e093596d06e1ba539f723264b"
 // Add friend function
@@ -246,8 +250,9 @@ async function createParty() {
     insert(userID.value, data.id)
   }
 }
-
-watch(party, () => console.log("party: ", party.value), { deep: true })
+console.log("party: ", party.value)
+console.log("party.p1 == null is ",party.value.p1 == null)
+watch(party, () => {console.log("party: ", party.value);console.log("party.p1 == null is ",party.value.p1 == null)}, { deep: true })
 const getPlayer = async (id) => {
   if (id == null) {
     return {}
