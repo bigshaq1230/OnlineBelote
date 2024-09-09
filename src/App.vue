@@ -30,6 +30,7 @@ onMounted(async () => {
   })
 
   if (!session.value) {
+
     router.push('/auth')
   } else {
     router.push('/home')
