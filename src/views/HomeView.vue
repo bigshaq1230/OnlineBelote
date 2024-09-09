@@ -67,7 +67,8 @@
         <input type="text" v-model="inputID"> <button @click="handleAddFriend">Add!</button>
         <ul>
           <li v-for="friend in friends">
-            {{ friend.player_name }} <button @click="sendInvite(friend.player_id)" v-if="partycreated">invite</button>
+            <!-- check here if a player already in the party -->
+            {{ friend.player_name }} <button @click="sendInvite(friend.player_id)" v-if="partycreated && !player_in_party(friend.player_id)">invite</button>
           </li>
         </ul>
       </details>
@@ -149,6 +150,7 @@ const party = ref({
   p3:null,
   p4:null
 })
+let party_players = [party.value.p1,party.value.p2,party.value.p3,party.value.p4]
 const partycreated = ref(false)
 const defaultAvatar = "https://i.redd.it/i-got-bored-so-i-decided-to-draw-a-random-image-on-the-v0-4ig97vv85vjb1.png?width=1280&format=png&auto=webp&s=7177756d1f393b6e093596d06e1ba539f723264b"
 // Add friend function
@@ -165,7 +167,15 @@ const handleAddFriend = async () => {
     // await getFriends() // Refresh friends list
   }
 }
+const player_in_party = (player_id) => {
+  const index = party_players.findIndex( (l) => l?.player_id === player_id)
+  if (index === -1)  {
+    return false
+  }
+  // or
+  return true
 
+}
 // Accept invite function
 const handleAcceptInvite = async (match_id, invite_id) => {
   const { data, error } = await supabase
@@ -250,8 +260,6 @@ async function createParty() {
     insert(userID.value, data.id)
   }
 }
-console.log("party: ", party.value)
-console.log("party.p1 == null is ",party.value.p1 == null)
 watch(party, () => {console.log("party: ", party.value);console.log("party.p1 == null is ",party.value.p1 == null)}, { deep: true })
 const getPlayer = async (id) => {
   if (id == null) {
